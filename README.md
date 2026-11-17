@@ -1,60 +1,60 @@
 # VOKAFLIGHT
 
-Configurator flight controller berbasis halaman web. Buka `vokaflight.html` di Chrome atau Edge desktop, sambungkan FC lewat USB, lalu atur sikap, PID, receiver, dan motor dari satu halaman. Tanpa instalasi dan tanpa server: Web Serial dan three.js jalan langsung dari file lokal.
+Web-based flight controller configurator. Open `vokaflight.html` in desktop Chrome or Edge, plug the FC in over USB, and set attitude, PID, receiver, and motors from one page. No install and no server: Web Serial and three.js run straight from the local file.
 
-![Setup, mode gelap](docs/setup-dark.png)
+![Setup, dark mode](docs/setup-dark.png)
 
-## Tampilan
+## Screens
 
-| Setup, mode terang | PID | Receiver |
+| Setup, light mode | PID | Receiver |
 | --- | --- | --- |
-| ![Setup mode terang](docs/setup-light.png) | ![PID](docs/pid-dark.png) | ![Receiver](docs/receiver-dark.png) |
+| ![Setup light mode](docs/setup-light.png) | ![PID](docs/pid-dark.png) | ![Receiver](docs/receiver-dark.png) |
 
-| Motors | Tampilan ponsel |
+| Motors | Phone layout |
 | --- | --- |
-| ![Motors](docs/motors-dark.png) | ![Setup di ponsel](docs/setup-mobile.png) |
+| ![Motors](docs/motors-dark.png) | ![Setup on a phone](docs/setup-mobile.png) |
 
-## Halaman
+## Pages
 
-- **Setup**: model 3D quad X dari Betaflight, sudut roll/pitch/yaw, horizon buatan, kompas, kalibrasi akselerometer, zero yaw, dan log FC.
-- **PID**: tabel P, I, D untuk roll, pitch, dan yaw. Kirim ke RAM, simpan ke flash, atau baca ulang dari FC.
-- **Receiver**: delapan kanal dengan bar dan garis tengah 1500.
-- **Motors**: slider master dan empat motor, dengan kunci "propeller dilepas" sebelum tes aktif.
+- **Setup**: Betaflight quad X model in 3D, roll/pitch/yaw readout, artificial horizon, compass, accelerometer calibration, yaw zero, and the FC log.
+- **PID**: P, I, D table for roll, pitch, and yaw. Send to RAM, save to flash, or read back from the FC.
+- **Receiver**: eight channels with bars and a 1500 center line.
+- **Motors**: master and four motor sliders, gated behind a "propellers removed" checkbox.
 
-Tanpa FC, aktifkan **Simulation mode** di halaman Setup. Sudut datang dari slider, bukan dari sensor.
+Without an FC, turn on **Simulation mode** on the Setup page. Angles come from the sliders, not from a sensor.
 
-## Menjalankan
+## Running it
 
-1. Unduh repo ini, atau `git clone https://github.com/lajumetro/vokaflight.git`
-2. Buka `vokaflight.html` di Chrome atau Edge desktop
-3. Tekan tombol colokan di kanan atas, pilih port FC
-4. Perangkat lain (Firefox, Safari, ponsel) tidak punya Web Serial. Halaman akan menampilkan pesan, dan mode simulasi tetap jalan.
+1. Download this repo, or `git clone https://github.com/lajumetro/vokaflight.git`
+2. Open `vokaflight.html` in desktop Chrome or Edge
+3. Press the plug button in the top right and pick the FC port
+4. Other browsers (Firefox, Safari, mobile) have no Web Serial. The page says so, and simulation mode still works.
 
 ## Firmware
 
-| Folder | Isi |
+| Folder | Contents |
 | --- | --- |
-| `firmware/vokalink_demo` | Data sikap dan RC disimulasikan, untuk menguji UI tanpa sensor |
-| `firmware/vokalink_mpu6050` | MPU6050 lewat I2C, complementary filter, offset tersimpan di flash |
+| `firmware/vokalink_demo` | Simulated attitude and RC data, for testing the UI without a sensor |
+| `firmware/vokalink_mpu6050` | MPU6050 over I2C, complementary filter, offsets stored in flash |
 
-Wiring MPU6050: VCC 3V3, GND, SDA GPIO21, SCL GPIO22, AD0 ke GND (alamat 0x68). Alamat 0x69 juga dideteksi otomatis. Diamkan board rata sekitar satu detik saat boot untuk kalibrasi gyro.
+MPU6050 wiring: VCC 3V3, GND, SDA GPIO21, SCL GPIO22, AD0 to GND (address 0x68). Address 0x69 is detected too. Keep the board flat and still for about a second at boot so the gyro can calibrate.
 
-Protokol serial teks antara FC dan halaman ada di `firmware/vokalink_demo/vokalink.h`, satu perintah per baris pada 115200 baud.
+The text protocol between FC and page lives in `firmware/vokalink_demo/vokalink.h`: one command per line at 115200 baud.
 
-## Struktur
+## Layout
 
 ```
-vokaflight.html          halaman configurator (HTML, CSS, dan JS dalam satu file)
-vendor/                  three.js, GLTFLoader, model quad_x.gltf
-firmware/                firmware ESP32 (Arduino)
-resource/                logo TRIK dan UGM SV
-docs/                    tangkapan layar untuk README
+vokaflight.html          configurator page (HTML, CSS, and JS in one file)
+vendor/                  three.js, GLTFLoader, quad_x.gltf model
+firmware/                ESP32 firmware (Arduino)
+resource/                TRIK and UGM SV logos
+docs/                    screenshots for this README
 ```
 
-## Kredit
+## Credits
 
-- Model 3D quad X dari Betaflight Configurator, GPL-3.0. Teks lisensi di `vendor/quad_x.LICENSE-GPL-3.0.txt`.
-- three.js dan GLTFLoader, MIT. Teks lisensi di `vendor/three.LICENSE`.
-- Dibuat oleh Laju Metro 81, Sekolah Vokasi Universitas Gadjah Mada.
+- Quad X 3D model from Betaflight Configurator, GPL-3.0. License text in `vendor/quad_x.LICENSE-GPL-3.0.txt`.
+- three.js and GLTFLoader, MIT. License text in `vendor/three.LICENSE`.
+- Built by Laju Metro 81, Vocational School, Universitas Gadjah Mada.
 
-Repo ini belum punya file lisensi sendiri.
+This repo has no license file of its own yet.
