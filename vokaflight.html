@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VOKAFLIGHT</title>
+<script>
+  // Tema dipilih sebelum halaman digambar agar tidak berkedip. Urutan: pilihan tersimpan, lalu setelan sistem.
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem('vokaflight-theme'); } catch (e) {}
+    if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    document.documentElement.dataset.theme = t;
+  })();
+</script>
+<style>
+  /* Grafit netral dengan kuning UGM. Kuning hanya untuk: aksi utama, tab aktif, penanda depan di instrumen. */
+  :root {
+    --bg: #0e0f10;
+    --panel: #17181a;
+    --line: #2c2e31;
+    --text: #ececea;
+    --muted: #a1a39f;
+    --accent: #ffc20e;
+    --on-accent: #0e0f10;
+    --danger: #ff7a6b;
+    --ok: #7fd49b;
+    --accent-ink: #ffc20e;   /* kuning untuk teks/garis: lebih gelap di tema terang agar terbaca */
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f4f1;
+    --panel: #e7e7e3;
+    --line: #cbcbc5;
+    --text: #17181a;
+    --muted: #55575a;
+    --danger: #c4321f;
+    --ok: #1d7a3c;
+    --accent-ink: #8f6200;
+    color-scheme: light;
+  }
+  /* Logo SV UGM berkas putih: di tema terang dijadikan gelap. */
+  :root[data-theme="light"] .org img { filter: brightness(0); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    /* Bahnschrift: huruf gaya DIN, dipakai di papan instrumen dan rambu, tersedia di Windows. */
+    font: 15px/1.45 Bahnschrift, "DIN Alternate", "Segoe UI", system-ui, sans-serif;
+    display: grid;
+    grid-template: "top top" auto "nav main" 1fr "org main" auto / 200px 1fr;
+  }
+  /* Logo TRIK navy transparan: butuh pelat terang agar terbaca di latar gelap. SV UGM sudah putih. */
+  .org { grid-area: org; border-right: 1px solid var(--line); padding: 16px 20px; display: grid; gap: 16px; justify-items: start; }
+  .org img { display: block; width: 100%; height: auto; }
+  .credit { margin: 0; color: var(--muted); font-size: 13px; }
+  .credit b { color: var(--text); font-weight: 600; }
+  .credit.small { font-size: 12px; margin-top: -10px; }
+  .trik { background: #fff; border-radius: 6px; padding: 6px 10px; display: block; }
+  .trik img { display: block; height: 32px; width: auto; }
+  .num { font-variant-numeric: tabular-nums; }
+  :focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+  header {
+    grid-area: top;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { font-size: 22px; font-weight: 700; letter-spacing: .04em; margin-right: auto; }
+  .brand { min-width: 0; }
+  .wordmark { display: block; height: 28px; width: auto; max-width: 100%; overflow: visible; }
+  .brand small { display: block; font-size: 11px; font-weight: 600; letter-spacing: .26em; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
+  #status { color: var(--muted); }
+  #status.err { color: var(--danger); }
+  .arm { display: none; align-items: center; gap: 8px; font-weight: 600; }
+  .arm.show { display: flex; }
+  .arm i { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); }
+  .arm.armed i { background: var(--danger); }
+  .arm.armed { color: var(--danger); }
+
+  button {
+    font: inherit; min-height: 44px; padding: 0 18px; border-radius: 3px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--text); cursor: pointer;
+  }
+  button:hover:not(:disabled) { border-color: var(--muted); }
+  button.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .icon-btn { width: 44px; padding: 0; display: grid; place-items: center; }
+  .icon-btn svg { width: 22px; height: 22px; }
+
+  nav { grid-area: nav; border-right: 1px solid var(--line); padding: 12px 0; }
+  nav button {
+    display: block; width: 100%; text-align: left; border: 0; border-radius: 0;
+    background: none; padding: 0 20px; color: var(--muted);
+  }
+  nav button[aria-selected="true"] { color: var(--text); font-weight: 600; text-decoration: underline 2px var(--accent-ink); text-underline-offset: 8px; }
+
+  main { grid-area: main; padding: 24px; overflow: auto; min-width: 0; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 20px; max-width: 60ch; }
+  /* Tanpa kotak: bagian dipisah garis tipis di atasnya dan ruang kosong. */
+  .card { border-top: 1px solid var(--line); padding: 16px 0 0; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .empty { color: var(--muted); padding: 48px 0; text-align: center; border-top: 0; }
+  [hidden] { display: none !important; }
+
+  /* Setup: model drone jadi fokus, angka sikap di sampingnya */
+  .setup { display: grid; grid-template-columns: 1fr 280px; gap: 16px; }
+  #quad { width: 100%; aspect-ratio: 16 / 10; display: block; }
+  .readout { display: grid; gap: 14px; align-content: start; }
+  .readout div { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+  .readout b { font-size: 30px; font-weight: 600; }
+  .readout span { color: var(--muted); }
+  .readout .gauges { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border: 0; padding: 0; }
+  .gauges figure { margin: 0; text-align: center; }
+  .gauges canvas { width: 100%; max-width: 160px; aspect-ratio: 1; display: block; margin: 0 auto; }
+  .gauges figcaption { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .stage { position: relative; padding: 0; overflow: hidden; border-top: 0; }
+  #simtag { position: absolute; top: 12px; left: 14px; color: var(--accent-ink); font-weight: 600; font-size: 13px; }
+  #stagemsg { position: absolute; inset: auto 0 0; margin: 0; text-align: center; padding: 16px; color: var(--muted); }
+  #stagemsg.err { color: var(--danger); }
+  .sim { margin-top: 16px; }
+  .simgrid { display: grid; grid-template-columns: 56px 1fr 56px; gap: 4px 12px; align-items: center; margin-top: 12px; max-width: 640px; }
+  .simgrid input { width: 100%; min-height: 44px; accent-color: var(--accent-ink); }
+  .simgrid span { text-align: right; }
+  .check { display: flex; gap: 10px; align-items: center; min-height: 44px; cursor: pointer; }
+  .check input { width: 20px; height: 20px; accent-color: var(--accent-ink); }
+  #log { margin: 16px 0 0; max-height: 160px; overflow: auto; font: 13px/1.5 Consolas, monospace; color: var(--muted); white-space: pre-wrap; }
+  #log .e { color: var(--danger); }
+
+  /* PID */
+  table { border-collapse: collapse; width: 100%; max-width: 560px; }
+  th, td { padding: 8px; text-align: left; }
+  th { color: var(--muted); font-weight: 500; }
+  td input {
+    width: 100%; min-width: 64px; min-height: 44px; font: inherit; padding: 0 10px;
+    background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 3px;
+  }
+  td input:invalid { border-color: var(--danger); }
+  .msg { min-height: 1.5em; margin-top: 12px; color: var(--muted); }
+  .msg.err { color: var(--danger); }
+  .msg.ok { color: var(--ok); }
+
+  /* Receiver */
+  .ch { display: grid; grid-template-columns: 48px 1fr 56px; gap: 12px; align-items: center; padding: 6px 0; }
+  .bar { height: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 3px; position: relative; overflow: hidden; }
+  .bar i { position: absolute; inset: 0 auto 0 0; background: var(--muted); }
+  .bar::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--line); }
+  .ch span:last-child { text-align: right; }
+
+  /* Motors */
+  .warn { border-top: 2px solid var(--danger); }
+  .warn label { display: flex; gap: 12px; align-items: center; min-height: 44px; cursor: pointer; }
+  .warn input { width: 22px; height: 22px; accent-color: var(--danger); }
+  .motors { display: grid; gap: 4px; margin-top: 16px; }
+  .motor { display: grid; grid-template-columns: 90px 1fr 56px 56px; gap: 12px; align-items: center; min-height: 44px; }
+  .motor input { width: 100%; min-height: 44px; accent-color: var(--accent-ink); }
+  .motor .out { color: var(--muted); text-align: right; }
+  .motor.master { border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 8px; }
+
+  @media (max-width: 760px) {
+    /* Di HP seluruh halaman yang scroll, supaya footer tidak memakan layar terus. */
+    html, body { height: auto; }
+    body { grid-template: "top" auto "nav" auto "main" auto "org" auto / 1fr; min-height: 100vh; align-content: start; }
+    main { overflow: visible; }
+    .org { border-right: 0; border-top: 1px solid var(--line); grid-template-columns: 160px; justify-content: center; justify-items: center; text-align: center; }
+    .trik img { height: 24px; }
+    .wordmark { height: 15px; }
+    .brand small { font-size: 10px; letter-spacing: .12em; margin-top: 6px; }
+    /* Baris 1: brand + TRIK. Baris 2: status + tombol. */
+    .trik { order: 1; }
+    header::after { content: ""; flex-basis: 100%; order: 2; }
+    .arm, #status, #connect, #theme { order: 3; }
+    #status { margin-right: auto; }
+    nav { display: grid; grid-template-columns: repeat(4, 1fr); padding: 0; border-right: 0; border-bottom: 1px solid var(--line); }
+    nav button { text-align: center; padding: 0 4px; }
+    main { padding: 16px; }
+    .setup { grid-template-columns: 1fr; }
+    .readout { grid-template-columns: repeat(3, 1fr); }
+    .readout div { flex-direction: column; }
+    .readout b { font-size: 22px; }
+    .readout .gauges { grid-column: 1 / -1; }
+    .motor { grid-template-columns: 70px 1fr 48px; }
+    .motor .out { display: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg class="wordmark" viewBox="-1 -1 416 30" role="img" aria-label="VOKAFLIGHT" fill="none" stroke-width="7.5" stroke-linejoin="miter" stroke-miterlimit="10">
+      <g transform="translate(5 0) skewX(-10)">
+        <g stroke="currentColor"><path transform="translate(0 0)" d="M3 3L18 25L33 3"/><path transform="translate(44 0)" d="M11 3H25L33 11V17L25 25H11L3 17V11Z"/><path transform="translate(88 0)" d="M5 3V25M32 3L5 14M13 11L32 25"/><path transform="translate(132 0)" d="M3 25L18 3L33 25M9 17H27"/></g>
+        <g stroke="var(--accent-ink)"><path transform="translate(176 0)" d="M5 25V3H32M5 14H26"/><path transform="translate(220 0)" d="M5 3V25H32"/><path transform="translate(264 0)" d="M6 3V25"/><path transform="translate(284 0)" d="M33 9L27 3H11L3 11V17L11 25H27L33 19V14H20"/><path transform="translate(328 0)" d="M5 3V25M31 3V25M5 14H31"/><path transform="translate(372 0)" d="M3 3H33M18 3V25"/></g>
+      </g>
+    </svg>
+    <small>Vocational Flight Controller Configurator</small>
+  </div>
+  <div class="arm" id="arm" role="status"><i></i><span>DISARMED</span></div>
+  <span id="status" role="status">Not connected</span>
+  <button class="primary icon-btn" id="connect" aria-label="Connect FC" title="Connect FC">
+    <svg id="ic-plug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0zM12 17v5"/></svg>
+    <svg id="ic-unplug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" hidden><path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0zM12 17v5M3 3l18 18"/></svg>
+  </button>
+  <button class="icon-btn" id="theme" aria-label="Switch to light mode" title="Switch to light mode">
+    <svg id="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>
+    <svg id="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="miter" aria-hidden="true" hidden><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+  </button>
+  <span class="trik"><img src="resource/First%20Final%20Plain.png" alt="TRIK"></span>
+</header>
+
+<nav role="tablist" aria-label="Pages">
+  <button role="tab" aria-selected="true" aria-controls="p-setup" data-tab="setup">Setup</button>
+  <button role="tab" aria-selected="false" aria-controls="p-pid" data-tab="pid">PID</button>
+  <button role="tab" aria-selected="false" aria-controls="p-rx" data-tab="rx">Receiver</button>
+  <button role="tab" aria-selected="false" aria-controls="p-motors" data-tab="motors">Motors</button>
+</nav>
+
+<footer class="org">
+  <img src="resource/Logo-Tengah-block-SV-UGM-putih-lock-up.png" alt="Vocational School, Universitas Gadjah Mada">
+  <p class="credit">Made by <b>Laju Metro 81</b></p>
+  <p class="credit small">Model 3D: Betaflight Configurator (GPL-3.0)</p>
+</footer>
+
+<main>
+  <p class="card empty" id="nofc">Plug in the FC over USB, press <b>Connect FC</b> and pick its port. No FC yet? Use <b>Simulation mode</b> on the Setup page.</p>
+  <p class="card empty" id="nosupport" hidden>This browser does not support Web Serial. Open this file in desktop Chrome or Edge.</p>
+
+  <section id="p-setup" role="tabpanel" data-panel="setup">
+    <h1>Setup</h1>
+    <p class="lead">Place the FC on a flat, still surface before calibrating the accelerometer.</p>
+    <div class="setup">
+      <div class="card stage">
+        <canvas id="quad" aria-label="3D model of the drone attitude"></canvas>
+        <span id="simtag" hidden>SIMULATION, not FC data</span>
+        <p id="stagemsg" role="status">Loading 3D model...</p>
+      </div>
+      <div class="card readout">
+        <div><span>Roll</span><b class="num" id="v-roll">--</b></div>
+        <div><span>Pitch</span><b class="num" id="v-pitch">--</b></div>
+        <div><span>Yaw</span><b class="num" id="v-yaw">--</b></div>
+        <div class="gauges">
+          <figure><canvas id="g-horizon" width="200" height="200" role="img" aria-label="Artificial horizon: roll and pitch"></canvas><figcaption>Horizon</figcaption></figure>
+          <figure><canvas id="g-heading" width="200" height="200" role="img" aria-label="Heading compass from yaw"></canvas><figcaption>Heading</figcaption></figure>
+        </div>
+      </div>
+    </div>
+    <div class="card sim" id="simcard">
+      <div class="row">
+        <button id="simtoggle" aria-pressed="false" aria-controls="simctl">Simulation mode</button>
+        <span class="lead" style="margin:0">View the 3D model without an FC. Angles come from the sliders, not from a sensor.</span>
+      </div>
+      <div id="simctl" hidden>
+        <div class="simgrid">
+          <label for="s-roll">Roll</label><input type="range" id="s-roll" min="-180" max="180" value="0"><span class="num" id="o-roll">0°</span>
+          <label for="s-pitch">Pitch</label><input type="range" id="s-pitch" min="-90" max="90" value="0"><span class="num" id="o-pitch">0°</span>
+          <label for="s-yaw">Yaw</label><input type="range" id="s-yaw" min="-180" max="180" value="0"><span class="num" id="o-yaw">0°</span>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label class="check"><input type="checkbox" id="s-auto"> Auto-rotate yaw</label>
+          <button id="s-reset">Reset to level</button>
+        </div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <button class="primary needs-fc" id="calacc">Calibrate accelerometer</button>
+      <button class="needs-fc" id="zeroyaw">Zero yaw on screen</button>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <b>FC log</b>
+      <div id="log" aria-live="polite">No messages yet.</div>
+    </div>
+  </section>
+
+  <section id="p-pid" role="tabpanel" data-panel="pid" hidden>
+    <h1>PID</h1>
+    <p class="lead">Values go to FC RAM first. Press Save so they persist after the FC powers off.</p>
+    <div class="card">
+      <form id="pidform" novalidate>
+        <table>
+          <thead><tr><th scope="col">Axis</th><th scope="col">P</th><th scope="col">I</th><th scope="col">D</th></tr></thead>
+          <tbody id="pidbody"></tbody>
+        </table>
+        <div class="row" style="margin-top:16px">
+          <button class="primary needs-fc" type="submit">Send to FC</button>
+          <button class="needs-fc" type="button" id="pidsave">Save to flash</button>
+          <button class="needs-fc" type="button" id="pidread">Read back from FC</button>
+        </div>
+        <p class="msg" id="pidmsg" role="status"></p>
+      </form>
+    </div>
+  </section>
+
+  <section id="p-rx" role="tabpanel" data-panel="rx" hidden>
+    <h1>Receiver</h1>
+    <p class="lead">Move the transmitter sticks and check that the matching channel moves. Center line = 1500.</p>
+    <div class="card" id="rxlist"></div>
+  </section>
+
+  <section id="p-motors" role="tabpanel" data-panel="motors" hidden>
+    <h1>Motors</h1>
+    <p class="lead">The test stops automatically when you leave this page, disconnect, or the FC arms.</p>
+    <div class="card warn">
+      <label><input type="checkbox" id="mtenable" class="needs-fc"> Propellers are removed. Enable motor test.</label>
+    </div>
+    <div class="card motors" id="motorlist"></div>
+  </section>
+</main>
+
+<script src="vendor/three.min.js"></script>
+<script src="vendor/GLTFLoader.js"></script>
+<script src="vendor/quad_x.gltf.js"></script>
+<script>
+const BAUD = 115200;
+const AXES = ['Roll', 'Pitch', 'Yaw'];
+const $ = id => document.getElementById(id);
+
+let port = null, writer = null, reader = null, connected = false;
+let att = null, yawZero = 0, armed = false;
+let rc = Array(8).fill(null), motorOut = Array(4).fill(null);
+let mtTimer = null, dirty = true;
+
+// ---------- Serial ----------
+const enc = new TextEncoder(), dec = new TextDecoder();
+let lastPort = null, autoReconnect = false, session = 0, readDone = null;
+let lastRx = 0, stale = false, watchdog = null, tries = 0;
+
+async function send(line) {
+  if (!writer) return;
+  try { await writer.write(enc.encode(line + '\n')); } catch (e) { if (port) fail('Send failed: ' + e.message); }
+}
+
+async function connect() {
+  setStatus('Choosing port...');
+  let p;
+  try { p = await navigator.serial.requestPort(); }
+  catch (e) { return setStatus('Not connected', e.name !== 'NotFoundError'); }
+  autoReconnect = true;
+  lastPort = p;
+  openPort(p);
+}
+
+async function openPort(p) {
+  setStatus('Opening port...');
+  try { await p.close(); } catch {}   // free a handle left over from an earlier session
+  try { await p.open({ baudRate: BAUD }); }
+  catch (e) {
+    return setStatus('Could not open port: ' + e.message + '. Close Serial Monitor or any other app using it.', true);
+  }
+  port = p;
+  const my = ++session;
+  writer = port.writable.getWriter();
+  connected = false; stale = false; tries = 0;
+  lastRx = performance.now();
+  setStatus('Waiting for FC...');
+  readDone = readLoop(my);
+  clearInterval(watchdog);
+  watchdog = setInterval(tick, 500);
+  send('hello');
+}
+
+// ESP32 resets when the port opens (DTR) or when you press EN. After a reset the FC
+// forgets 'stream 1', so keep saying hello until it answers, then restart the stream.
+function tick() {
+  if (!port) return clearInterval(watchdog);
+  if (!connected) {
+    if (++tries > 20) return fail('FC is not answering. Check baud 115200 and the VokaLink firmware.');
+    return send('hello');
+  }
+  send('ping');   // keeps the FC LED solid and tells it the PC is still here
+  if (performance.now() - lastRx > 1500) {
+    if (!stale) { stale = true; att = null; setStatus('No data from FC (reset?). Reconnecting...', true); }
+    send('hello');
+  }
+}
+
+async function readLoop(my) {
+  let buf = '';
+  while (port && my === session && port.readable) {
+    reader = port.readable.getReader();
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let i;
+        while ((i = buf.indexOf('\n')) >= 0) {
+          handle(buf.slice(0, i).trim());
+          buf = buf.slice(i + 1);
+        }
+        if (buf.length > 1000) buf = '';
+      }
+    } catch (e) {
+      // Framing/break/overrun errors during an ESP reset are not fatal: port.readable is
+      // recreated and the loop picks it up again. A fatal error leaves it null and ends the loop.
+      buf = '';
+    } finally {
+      try { reader.releaseLock(); } catch {}
+      reader = null;
+    }
+  }
+  if (port && my === session) fail('Connection lost.');
+}
+
+async function disconnect(msg) {
+  stopMotorTest();
+  clearInterval(watchdog);
+  const p = port;
+  port = null; connected = false; stale = false; session++;
+  try { await reader?.cancel(); } catch {}
+  try { await readDone; } catch {}
+  try { writer?.releaseLock(); } catch {}
+  reader = writer = null;
+  try { await p?.close(); } catch {}
+  att = null; armed = false; rc.fill(null); motorOut.fill(null);
+  render();
+  setStatus(msg || 'Not connected', !!msg);
+}
+
+function fail(msg) { if (port) disconnect(msg); else setStatus(msg, true); }
+
+function handle(line) {
+  if (!line) return;
+  const [k, ...a] = line.split(/\s+/);
+  const n = a.map(Number);
+  switch (k) {
+    case 'I':
+      lastRx = performance.now(); stale = false;
+      connected = true; setStatus('Connected: ' + a.join(' ')); send('stream 1');
+      log(line); break;
+    case 'A': lastRx = performance.now(); att = { roll: n[0], pitch: n[1], yaw: n[2] }; armed = n[3] === 1; if (armed) stopMotorTest(); break;
+    case 'R': rc = n.slice(0, 8); break;
+    case 'M': motorOut = n.slice(0, 4); break;
+    case 'P': fillPid(n[0], n.slice(1, 4)); break;
+    case 'OK':
+      log(line);
+      if (a[0] === 'pid') pidMsg('PID sent to FC (not saved yet).', 'ok');
+      if (a[0] === 'save') pidMsg('PID saved to FC flash.', 'ok');
+      break;
+    case 'ERR':
+      log(line, true);
+      if (a[0] === 'armed') pidMsg('Rejected: FC is armed. Disarm first.', 'err');
+      if (a[0] === 'pid') pidMsg('Rejected by FC: value outside 0 to 500.', 'err');
+      break;
+    default: log(line);
+  }
+  dirty = true;
+}
+
+// ---------- UI umum ----------
+function setStatus(t, err) { $('status').textContent = t; $('status').classList.toggle('err', !!err); render(); }
+
+let logLines = [];
+function log(t, err) {
+  logLines.push([t, err]);
+  if (logLines.length > 50) logLines.shift();
+  $('log').replaceChildren(...logLines.map(([s, e]) => { const d = document.createElement('div'); d.textContent = s; if (e) d.className = 'e'; return d; }));
+  $('log').scrollTop = 1e9;
+}
+
+function render() {
+  const live = connected;
+  document.querySelectorAll('.needs-fc').forEach(b => b.disabled = !live);
+  const cl = port ? 'Disconnect' : 'Connect FC';
+  $('connect').setAttribute('aria-label', cl); $('connect').title = cl;
+  $('connect').classList.toggle('primary', !port);
+  $('ic-plug').toggleAttribute('hidden', !!port); $('ic-unplug').toggleAttribute('hidden', !port);  // SVG tidak punya properti .hidden
+  $('nofc').hidden = live || !('serial' in navigator);
+  $('arm').classList.toggle('show', live);
+  $('arm').classList.toggle('armed', armed);
+  $('arm').querySelector('span').textContent = armed ? 'ARMED' : 'DISARMED';
+  if (!live) $('mtenable').checked = false;
+  // Data FC asli selalu menang: simulasi dimatikan saat FC tersambung.
+  if (live && sim) setSim(false);
+  $('simcard').hidden = live;
+  updateMotorUi();
+}
+
+const tabs = [...document.querySelectorAll('[role=tab]')];
+function selectTab(btn) {
+  tabs.forEach(t => {
+    const on = t === btn;
+    t.setAttribute('aria-selected', on);
+    t.tabIndex = on ? 0 : -1;
+    document.querySelector(`[data-panel=${t.dataset.tab}]`).hidden = !on;
+  });
+  if (btn.dataset.tab !== 'motors') { $('mtenable').checked = false; stopMotorTest(); }
+  dirty = true;
+}
+tabs.forEach((t, i) => {
+  t.onclick = () => selectTab(t);
+  t.onkeydown = e => {
+    const d = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key];
+    if (!d) return;
+    e.preventDefault();
+    const nx = tabs[(i + d + tabs.length) % tabs.length];
+    nx.focus(); selectTab(nx);
+  };
+});
+
+// ---------- Mode simulasi: sudut dari slider, tanpa FC ----------
+let sim = false, simTimer = null;
+const SIM_AX = ['roll', 'pitch', 'yaw'];
+function simApply() {
+  att = Object.fromEntries(SIM_AX.map(k => [k, +$('s-' + k).value]));
+  SIM_AX.forEach(k => $('o-' + k).textContent = $('s-' + k).value + '\u00b0');
+  dirty = true;
+}
+function setSim(on) {
+  sim = on;
+  $('simtoggle').setAttribute('aria-pressed', on);
+  $('simtoggle').classList.toggle('primary', on);
+  $('simtoggle').textContent = on ? 'Stop simulation' : 'Simulation mode';
+  $('simctl').hidden = !on;
+  if (!on) { $('s-auto').checked = false; clearInterval(simTimer); simTimer = null; }
+  yawZero = 0;
+  if (on) simApply(); else if (!connected) { att = null; dirty = true; }
+}
+$('simtoggle').onclick = () => setSim(!sim);
+SIM_AX.forEach(k => $('s-' + k).oninput = simApply);
+$('s-reset').onclick = () => { SIM_AX.forEach(k => $('s-' + k).value = 0); simApply(); };
+$('s-auto').onchange = () => {
+  clearInterval(simTimer); simTimer = null;
+  if ($('s-auto').checked) simTimer = setInterval(() => {
+    const y = $('s-yaw');
+    y.value = +y.value >= 180 ? -180 : +y.value + 1;
+    simApply();
+  }, 30);
+};
+
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  const l = t === 'light' ? 'Switch to dark mode' : 'Switch to light mode';
+  $('theme').setAttribute('aria-label', l); $('theme').title = l;
+  $('ic-sun').toggleAttribute('hidden', t === 'light'); $('ic-moon').toggleAttribute('hidden', t !== 'light');
+  dirty = true;
+}
+$('theme').onclick = () => {
+  const t = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  applyTheme(t);
+  try { localStorage.setItem('vokaflight-theme', t); } catch (e) {}
+};
+applyTheme(document.documentElement.dataset.theme);
+$('connect').onclick = () => { if (port) { autoReconnect = false; disconnect(); } else connect(); };
+$('calacc').onclick = () => { log('> calacc'); send('calacc'); };
+$('zeroyaw').onclick = () => { if (att) yawZero = att.yaw; dirty = true; };
+
+// ---------- PID ----------
+const pidInputs = AXES.map((name, a) => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<th scope="row">${name}</th>`;
+  const ins = ['P', 'I', 'D'].map(term => {
+    const td = document.createElement('td');
+    const inp = document.createElement('input');
+    Object.assign(inp, { type: 'number', min: 0, max: 500, step: 'any', required: true, inputMode: 'decimal' });
+    inp.className = 'num needs-fc';
+    inp.setAttribute('aria-label', `${name} ${term}`);
+    td.append(inp); tr.append(td);
+    return inp;
+  });
+  $('pidbody').append(tr);
+  return ins;
+});
+function fillPid(a, v) { if (pidInputs[a]) v.forEach((x, i) => pidInputs[a][i].value = +x.toFixed(3)); }
+function pidMsg(t, cls) { $('pidmsg').textContent = t; $('pidmsg').className = 'msg ' + (cls || ''); }
+$('pidform').onsubmit = e => {
+  e.preventDefault();
+  if (!e.target.checkValidity()) return pidMsg('Fill every field with a number from 0 to 500.', 'err');
+  pidMsg('Sending...');
+  pidInputs.forEach((ins, a) => send(`pid ${a} ${ins.map(i => i.value).join(' ')}`));
+};
+$('pidsave').onclick = () => { pidMsg('Saving...'); send('save'); };
+$('pidread').onclick = () => { pidMsg('Reading from FC...'); send('pid?'); };
+
+// ---------- Receiver ----------
+const rxRows = rc.map((_, i) => {
+  const row = document.createElement('div');
+  row.className = 'ch';
+  row.innerHTML = `<span>CH${i + 1}</span><div class="bar"><i></i></div><span class="num">--</span>`;
+  $('rxlist').append(row);
+  return { bar: row.querySelector('i'), val: row.querySelector('.num') };
+});
+
+// ---------- Motor ----------
+// Urutan motor gaya Betaflight Quad X: 1 belakang kanan, 2 depan kanan, 3 belakang kiri, 4 depan kiri.
+const MOTOR_NAMES = ['Rear right', 'Front right', 'Rear left', 'Front left'];
+function motorRow(label, cls) {
+  const row = document.createElement('div');
+  row.className = 'motor ' + cls;
+  row.innerHTML = `<label>${label}</label><input type="range" min="1000" max="2000" step="10" value="1000" class="needs-fc"><span class="num">1000</span><span class="num out" title="Actual output from FC">--</span>`;
+  const inp = row.querySelector('input');
+  row.querySelector('label').onclick = () => inp.focus();
+  inp.setAttribute('aria-label', label);
+  $('motorlist').append(row);
+  return { inp, val: row.querySelector('.num'), out: row.querySelector('.out') };
+}
+const master = motorRow('All', 'master');
+const motorUi = MOTOR_NAMES.map((n, i) => motorRow(`M${i + 1}`, ''));
+motorUi.forEach((m, i) => m.inp.title = MOTOR_NAMES[i]);
+master.inp.oninput = () => { motorUi.forEach(m => m.inp.value = master.inp.value); updateMotorUi(); };
+motorUi.forEach(m => m.inp.oninput = updateMotorUi);
+$('mtenable').onchange = () => $('mtenable').checked ? startMotorTest() : stopMotorTest();
+
+function startMotorTest() {
+  if (armed) { $('mtenable').checked = false; return log('Motor test rejected: FC is armed.', true); }
+  clearInterval(mtTimer);
+  // FC mematikan tes jika tidak menerima 'mt' selama 500 ms.
+  mtTimer = setInterval(() => send('mt ' + motorUi.map(m => m.inp.value).join(' ')), 100);
+  updateMotorUi();
+}
+function stopMotorTest() {
+  clearInterval(mtTimer); mtTimer = null;
+  [master, ...motorUi].forEach(m => m.inp.value = 1000);
+  updateMotorUi();
+}
+function updateMotorUi() {
+  const on = !!mtTimer && connected;
+  [master, ...motorUi].forEach(m => { m.inp.disabled = !on; m.val.textContent = m.inp.value; });
+}
+
+// ---------- Model 3D: quad_x.gltf asli Betaflight, dirender three.js ----------
+// Sumbu model: Y atas, +Z hidung (baling-baling merah), +X kiri. Sama dengan Betaflight Configurator.
+const D2R = Math.PI / 180;
+const cv = $('quad');
+let renderer = null, scene, camera, pivot, model = null;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true });
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(45, 16 / 10, 0.1, 100);
+  // Kamera di belakang-atas, sama seperti tampilan Setup Betaflight.
+  camera.position.set(0, 7, -11);
+  camera.lookAt(0, 0, 0);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x45484c, 1.1));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+  sun.position.set(4, 10, -6);
+  scene.add(sun);
+  pivot = new THREE.Group();
+  scene.add(pivot);
+  new THREE.GLTFLoader().parse(JSON.stringify(window.QUAD_X_GLTF), '', gltf => {
+    model = gltf.scene;
+    // Pusatkan model di titik putar.
+    const box = new THREE.Box3().setFromObject(model);
+    model.position.sub(box.getCenter(new THREE.Vector3()));
+    pivot.add(model);
+    dirty = true;
+  }, err => stageMsg('Failed to load 3D model: ' + (err.message || err), true));
+} catch (e) {
+  renderer = null;
+  stageMsg('This browser cannot show 3D (WebGL is off). The angle readout on the right still works.', true);
+}
+
+function stageMsg(t, err) {
+  $('stagemsg').hidden = !t;
+  $('stagemsg').textContent = t || '';
+  $('stagemsg').classList.toggle('err', !!err);
+}
+
+function drawQuad() {
+  $('simtag').hidden = !(sim && att);
+  if (!renderer) return;
+  if (!model) return stageMsg('Loading 3D model...');
+  if (!att) stageMsg(connected ? 'Waiting for attitude data...' : 'No data. Connect the FC or turn on Simulation mode.');
+  else stageMsg('');
+  const r = cv.getBoundingClientRect();
+  const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+  if (cv.width !== Math.round(w * devicePixelRatio)) {
+    renderer.setPixelRatio(devicePixelRatio);
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  // Tanpa data, model tetap tampil datar dan redup supaya bentuknya terlihat.
+  const a = att || { roll: 0, pitch: 0, yaw: 0 };
+  model.traverse(o => {
+    if (!o.material || o.material.transparent === !att) return;
+    o.material.transparent = !att; o.material.opacity = att ? 1 : 0.35; o.material.needsUpdate = true;
+  });
+  // Urutan seperti Betaflight: yaw di sumbu Y, pitch di X, roll di Z.
+  // Roll positif = sisi kanan turun, pitch positif = hidung naik.
+  pivot.rotation.set(-a.pitch * D2R, -(a.yaw - yawZero) * D2R, a.roll * D2R, 'YXZ');
+  renderer.render(scene, camera);
+}
+
+// ---------- Instrumen kokpit (canvas 2D) ----------
+// Warna langit/tanah mengikuti konvensi instrumen pesawat, bukan palet UI, supaya langsung dikenali.
+const SKY = '#2f7fc1', GROUND = '#7a4f2a';
+function gaugeCtx(id) {
+  const c = $(id), ctx = c.getContext('2d');
+  const s = Math.round(c.getBoundingClientRect().width * devicePixelRatio) || 200;
+  if (c.width !== s) { c.width = c.height = s; }
+  ctx.setTransform(s / 200, 0, 0, s / 200, 0, 0); // gambar di koordinat 200x200
+  ctx.clearRect(0, 0, 200, 200);
+  return ctx;
+}
+function bezel(ctx) {
+  ctx.lineWidth = 6; ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--line');
+  ctx.beginPath(); ctx.arc(100, 100, 96, 0, 2 * Math.PI); ctx.stroke();
+}
+function noData(ctx) {
+  const cs = getComputedStyle(document.documentElement);
+  ctx.fillStyle = cs.getPropertyValue('--panel'); ctx.beginPath(); ctx.arc(100, 100, 93, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillStyle = cs.getPropertyValue('--muted'); ctx.font = '600 22px Bahnschrift, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('--', 100, 100);
+  bezel(ctx);
+}
+function drawHorizon(a) {
+  const ctx = gaugeCtx('g-horizon');
+  if (!a) return noData(ctx);
+  const PX = 2; // piksel per derajat pitch
+  ctx.save();
+  ctx.beginPath(); ctx.arc(100, 100, 93, 0, 2 * Math.PI); ctx.clip();
+  ctx.translate(100, 100);
+  // Dunia berputar berlawanan dengan pesawat: roll kanan, horizon miring ke kiri.
+  ctx.rotate(-a.roll * D2R);
+  ctx.translate(0, a.pitch * PX);
+  ctx.fillStyle = SKY; ctx.fillRect(-300, -600, 600, 600);
+  ctx.fillStyle = GROUND; ctx.fillRect(-300, 0, 600, 600);
+  ctx.strokeStyle = '#fff'; ctx.fillStyle = '#fff'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-300, 0); ctx.lineTo(300, 0); ctx.stroke();
+  ctx.font = '600 11px Bahnschrift, sans-serif'; ctx.textBaseline = 'middle';
+  for (let p = -60; p <= 60; p += 10) {
+    if (!p) continue;
+    const y = -p * PX, w = p % 20 ? 14 : 30;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(-w, y); ctx.lineTo(w, y); ctx.stroke();
+    if (!(p % 20)) { ctx.textAlign = 'left'; ctx.fillText(Math.abs(p), w + 4, y); ctx.textAlign = 'right'; ctx.fillText(Math.abs(p), -w - 4, y); }
+  }
+  ctx.restore();
+  // Skala roll tetap di atas, penunjuk ikut roll.
+  ctx.save(); ctx.translate(100, 100);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+  for (const d of [-60, -45, -30, -20, -10, 0, 10, 20, 30, 45, 60]) {
+    const r = (d - 90) * D2R, l = d % 30 ? 7 : 12;
+    ctx.beginPath(); ctx.moveTo(Math.cos(r) * 92, Math.sin(r) * 92); ctx.lineTo(Math.cos(r) * (92 - l), Math.sin(r) * (92 - l)); ctx.stroke();
+  }
+  ctx.rotate(-a.roll * D2R);
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.moveTo(0, -78); ctx.lineTo(-7, -66); ctx.lineTo(7, -66); ctx.fill();
+  ctx.restore();
+  // Simbol pesawat tetap, kuning = aksen UI.
+  ctx.strokeStyle = '#ffc20e'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(52, 100); ctx.lineTo(82, 100); ctx.lineTo(92, 110); ctx.moveTo(148, 100); ctx.lineTo(118, 100); ctx.lineTo(108, 110); ctx.stroke();
+  ctx.fillStyle = '#ffc20e'; ctx.beginPath(); ctx.arc(100, 100, 4, 0, 2 * Math.PI); ctx.fill();
+  bezel(ctx);
+}
+function drawHeading(yaw) {
+  const ctx = gaugeCtx('g-heading');
+  if (yaw == null) return noData(ctx);
+  const hdg = (yaw % 360 + 360) % 360;
+  ctx.fillStyle = '#0e0f10'; ctx.beginPath(); ctx.arc(100, 100, 93, 0, 2 * Math.PI); ctx.fill();
+  ctx.save(); ctx.translate(100, 100);
+  // Piringan kompas berputar, penunjuk di atas tetap = arah hidung.
+  ctx.rotate(-hdg * D2R);
+  ctx.strokeStyle = '#ececea'; ctx.fillStyle = '#ececea'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (let d = 0; d < 360; d += 5) {
+    const l = d % 30 ? (d % 10 ? 5 : 9) : 13;
+    ctx.lineWidth = d % 30 ? 1 : 2;
+    ctx.beginPath(); ctx.moveTo(0, -90); ctx.lineTo(0, -90 + l); ctx.stroke();
+    if (!(d % 30)) {
+      const lbl = { 0: 'N', 90: 'E', 180: 'S', 270: 'W' }[d] ?? d / 10;
+      ctx.font = (typeof lbl === 'string' ? '700 17px' : '500 12px') + ' Bahnschrift, sans-serif';
+      ctx.fillStyle = d === 0 ? '#ff7a6b' : '#ececea';
+      ctx.fillText(lbl, 0, -66);
+    }
+    ctx.rotate(5 * D2R);
+  }
+  ctx.restore();
+  // Penunjuk hidung + bentuk quad kecil di tengah.
+  ctx.fillStyle = '#ffc20e';
+  ctx.beginPath(); ctx.moveTo(100, 4); ctx.lineTo(93, 18); ctx.lineTo(107, 18); ctx.fill();
+  ctx.strokeStyle = '#ffc20e'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(84, 84); ctx.lineTo(116, 116); ctx.moveTo(116, 84); ctx.lineTo(84, 116); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(100, 100); ctx.lineTo(100, 78); ctx.stroke();
+  ctx.fillStyle = '#ececea'; ctx.font = '600 15px Bahnschrift, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(String(Math.round(hdg) % 360).padStart(3, '0') + '\u00b0', 100, 138);
+  bezel(ctx);
+}
+
+// ---------- Loop gambar: hanya saat ada data baru ----------
+function frame() {
+  if (dirty) {
+    dirty = false;
+    const tab = document.querySelector('[aria-selected=true]').dataset.tab;
+    const f = v => v == null ? '--' : v.toFixed(1) + '\u00b0';
+    $('v-roll').textContent = f(att?.roll);
+    $('v-pitch').textContent = f(att?.pitch);
+    $('v-yaw').textContent = f(att && ((att.yaw - yawZero + 540) % 360 - 180));
+    if (tab === 'setup') {
+      drawQuad();
+      drawHorizon(att);
+      drawHeading(att ? att.yaw - yawZero : null);
+    }
+    if (tab === 'rx') rc.forEach((v, i) => {
+      const ok = Number.isFinite(v);
+      rxRows[i].bar.style.width = ok ? Math.max(0, Math.min(100, (v - 1000) / 10)) + '%' : '0';
+      rxRows[i].val.textContent = ok ? v : '--';
+    });
+    if (tab === 'motors') motorUi.forEach((m, i) => m.out.textContent = Number.isFinite(motorOut[i]) ? motorOut[i] : '--');
+    $('arm').classList.toggle('armed', armed);
+    $('arm').querySelector('span').textContent = armed ? 'ARMED' : 'DISARMED';
+    if (armed && $('mtenable').checked) { $('mtenable').checked = false; }
+  }
+  requestAnimationFrame(frame);
+}
+addEventListener('resize', () => dirty = true);
+
+if (!('serial' in navigator)) {
+  $('nosupport').hidden = false;
+  $('connect').disabled = true;
+}
+navigator.serial?.addEventListener('disconnect', e => { if (e.target === port) disconnect(autoReconnect ? 'FC unplugged. Waiting for it to come back...' : 'FC unplugged.'); });
+navigator.serial?.addEventListener('connect', e => {
+  if (autoReconnect && !port && e.target === lastPort) openPort(lastPort);
+});
+selectTab(tabs[0]);
+render();
+frame();
+</script>
+</body>
+</html>

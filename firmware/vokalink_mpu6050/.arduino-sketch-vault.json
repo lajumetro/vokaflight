@@ -1,0 +1,77 @@
+[
+  {
+    "timestamp": "2026-11-16T13:58:17.714Z",
+    "sketchPath": "D:\\01 - Research and Engineering\\VOKAFLIGHT\\firmware\\vokalink_mpu6050",
+    "fqbn": "esp32:esp32:esp32doit-devkit-v1",
+    "board": {
+      "name": "esp32:esp32:esp32doit-devkit-v1",
+      "fqbn": "esp32:esp32:esp32doit-devkit-v1"
+    },
+    "port": {
+      "address": "COM7",
+      "protocol": "serial"
+    },
+    "changes": [],
+    "changeType": "port"
+  },
+  {
+    "timestamp": "2026-11-16T14:10:01.143Z",
+    "sketchPath": "D:\\01 - Research and Engineering\\VOKAFLIGHT\\firmware\\vokalink_mpu6050",
+    "fqbn": "esp32:esp32:esp32doit-devkit-v1",
+    "board": {
+      "name": "esp32:esp32:esp32doit-devkit-v1",
+      "fqbn": "esp32:esp32:esp32doit-devkit-v1"
+    },
+    "port": {
+      "address": "COM7",
+      "protocol": "serial"
+    },
+    "changes": [],
+    "changeType": "port"
+  },
+  {
+    "timestamp": "2026-11-16T15:21:29.061Z",
+    "sketchPath": "D:\\01 - Research and Engineering\\VOKAFLIGHT\\firmware\\vokalink_mpu6050",
+    "fqbn": "esp32:esp32:esp32doit-devkit-v1",
+    "board": {
+      "name": "esp32:esp32:esp32doit-devkit-v1",
+      "fqbn": "esp32:esp32:esp32doit-devkit-v1"
+    },
+    "port": {
+      "address": "COM7",
+      "protocol": "serial"
+    },
+    "changes": [],
+    "changeType": "port"
+  },
+  {
+    "timestamp": "2026-11-16T16:24:19.679Z",
+    "sketchPath": "D:\\01 - Research and Engineering\\VOKAFLIGHT\\firmware\\vokalink_mpu6050",
+    "fqbn": "esp32:esp32:esp32doit-devkit-v1",
+    "board": {
+      "name": "esp32:esp32:esp32doit-devkit-v1",
+      "fqbn": "esp32:esp32:esp32doit-devkit-v1"
+    },
+    "port": {
+      "address": "COM7",
+      "protocol": "serial"
+    },
+    "changes": [],
+    "changeType": "port"
+  },
+  {
+    "timestamp": "2026-11-16T16:48:11.278Z",
+    "sketchPath": "D:\\01 - Research and Engineering\\VOKAFLIGHT\\firmware\\vokalink_mpu6050",
+    "fqbn": "esp32:esp32:esp32doit-devkit-v1",
+    "board": {
+      "name": "esp32:esp32:esp32doit-devkit-v1",
+      "fqbn": "esp32:esp32:esp32doit-devkit-v1"
+    },
+    "port": {
+      "address": "COM7",
+      "protocol": "serial"
+    },
+    "changes": [],
+    "changeType": "port"
+  }
+]
