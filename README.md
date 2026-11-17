@@ -16,10 +16,10 @@ Web-based flight controller configurator. Open `vokaflight.html` in desktop Chro
 
 ## Pages
 
-- **Setup**: Betaflight quad X model in 3D, roll/pitch/yaw readout, artificial horizon, compass, accelerometer calibration, yaw zero, and the FC log.
-- **PID**: P, I, D table for roll, pitch, and yaw. Send to RAM, save to flash, or read back from the FC.
-- **Receiver**: eight channels with bars and a 1500 center line.
-- **Motors**: master and four motor sliders, gated behind a "propellers removed" checkbox.
+- **Setup** shows the Betaflight quad X model in 3D, with roll/pitch/yaw readout, artificial horizon, compass, accelerometer calibration, yaw zero, and the FC log.
+- **PID** holds the P, I, D table for roll, pitch, and yaw. Send to RAM, save to flash, or read back from the FC.
+- **Receiver** lists eight channels with bars and a 1500 center line.
+- **Motors** gives a master slider and four motor sliders, gated behind a "propellers removed" checkbox.
 
 Without an FC, turn on **Simulation mode** on the Setup page. Angles come from the sliders, not from a sensor.
 
